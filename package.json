@@ -19,7 +19,7 @@
     "cloud messaging"
   ],
   "license": "MIT",
-  "name": "react-native-fcm",
+  "name": "react-native-fcm-for-fanding",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/evollu/react-native-fcm.git"
