@@ -56,36 +56,29 @@ public class SendNotificationTask extends AsyncTask<Void, Void, Void> {
                 return null;
             }
 
-            String body = bundle.getString("body");
+            Resources res = mContext.getResources();
+
+            String title = bundle.getString("sTitle");
+            String body = bundle.getString("sMessage");
             if (body == null) {
-                return null;
+                title = "";
+                body = bundle.getString("sTitle");
             }
             body = URLDecoder.decode( body, "UTF-8" );
 
-            Resources res = mContext.getResources();
             String packageName = mContext.getPackageName();
-
-            String title = bundle.getString("title");
             if (title == null) {
                 ApplicationInfo appInfo = mContext.getApplicationInfo();
                 title = mContext.getPackageManager().getApplicationLabel(appInfo).toString();
             }
             title = URLDecoder.decode( title, "UTF-8" );
 
-            String ticker = bundle.getString("ticker");
-            if (ticker != null) ticker = URLDecoder.decode( ticker, "UTF-8" );
-
-            String subText = bundle.getString("sub_text");
-            if (subText != null) subText = URLDecoder.decode( subText, "UTF-8" );
-
-            NotificationCompat.Builder notification = new NotificationCompat.Builder(mContext, bundle.getString("channel"))
+            NotificationCompat.Builder notification = new NotificationCompat.Builder(mContext, "default")
                     .setContentTitle(title)
                     .setContentText(body)
-                    .setTicker(ticker)
                     .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
                     .setAutoCancel(bundle.getBoolean("auto_cancel", true))
                     .setNumber(bundle.getInt("number", (int)bundle.getDouble("number")))
-                    .setSubText(subText)
                     .setVibrate(new long[]{0, DEFAULT_VIBRATION})
                     .setExtras(bundle.getBundle("data"));
 
@@ -136,7 +129,7 @@ public class SendNotificationTask extends AsyncTask<Void, Void, Void> {
             }
 
             //icon
-            String smallIcon = bundle.getString("icon", "ic_launcher");
+            String smallIcon = bundle.getString("icon", "ic_notify");
             int smallIconResId = res.getIdentifier(smallIcon, "mipmap", packageName);
             if(smallIconResId == 0){
                 smallIconResId = res.getIdentifier(smallIcon, "drawable", packageName);
@@ -146,7 +139,7 @@ public class SendNotificationTask extends AsyncTask<Void, Void, Void> {
             }
 
             //large icon
-            String largeIcon = bundle.getString("large_icon");
+            String largeIcon = bundle.getString("sImageUrl");
             if(largeIcon != null && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP){
                 if (largeIcon.startsWith("http://") || largeIcon.startsWith("https://")) {
                     Bitmap bitmap = getBitmapFromURL(largeIcon);
@@ -161,80 +154,12 @@ public class SendNotificationTask extends AsyncTask<Void, Void, Void> {
                 }
             }
 
-            //big text
-            String bigText = bundle.getString("big_text");
-            if(bigText != null){
-                bigText = URLDecoder.decode( bigText, "UTF-8" );
-                notification.setStyle(new NotificationCompat.BigTextStyle().bigText(bigText));
-            }
-
-            //picture
-            String picture = bundle.getString("picture");
-
-            if(picture!=null){
-                NotificationCompat.BigPictureStyle bigPicture = new NotificationCompat.BigPictureStyle();
-
-                if (picture.startsWith("http://") || picture.startsWith("https://")) {
-                    Bitmap bitmap = getBitmapFromURL(picture);
-                    bigPicture.bigPicture(bitmap);
-                } else {
-                    int pictureResId = res.getIdentifier(picture, "mipmap", packageName);
-                    Bitmap pictureResIdBitmap = BitmapFactory.decodeResource(res, pictureResId);
-
-                    if (pictureResId != 0) {
-                        bigPicture.bigPicture(pictureResIdBitmap);
-                    }
-                }
-                // setBigContentTitle and setSummaryText overrides current title with body and subtext
-		// that cause to display duplicated body in subtext when picture has specified
-                notification.setStyle(bigPicture);
-            }
-
-            //sound
-            String soundName = bundle.getString("sound");
-            if (soundName != null) {
-                if (soundName.equalsIgnoreCase("default")) {
-                    notification.setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));
-                } else {
-                    int soundResourceId = res.getIdentifier(soundName, "raw", packageName);
-                    if (soundResourceId == 0) {
-                        soundName = soundName.substring(0, soundName.lastIndexOf('.'));
-                        soundResourceId = res.getIdentifier(soundName, "raw", packageName);
-                    }
-                    notification.setSound(Uri.parse("android.resource://" + packageName + "/" + soundResourceId));
-                }
-            }
-
-            //color
-            if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                notification.setCategory(NotificationCompat.CATEGORY_CALL);
-
-                String color = bundle.getString("color");
-                if (color != null) {
-                    notification.setColor(Color.parseColor(color));
-                }
-            }
-
-            //vibrate
-            if(bundle.containsKey("vibrate")){
-                long vibrate = Math.round(bundle.getDouble("vibrate", DEFAULT_VIBRATION));
-                if(vibrate > 0){
-                    notification.setVibrate(new long[]{0, vibrate});
-                }else{
-                    notification.setVibrate(null);
-                }
-            }
-
-            //lights
-            if (bundle.getBoolean("lights")) {
-                notification.setDefaults(NotificationCompat.DEFAULT_LIGHTS);
-            }
-
-            if(bundle.containsKey("fire_date")) {
-                Log.d(TAG, "broadcast intent if it is a scheduled notification");
-                Intent i = new Intent("com.evollu.react.fcm.ReceiveLocalNotification");
-                i.putExtras(bundle);
-                LocalBroadcastManager.getInstance(mContext).sendBroadcast(i);
+            notification.setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION));
+            long vibrate = Math.round(bundle.getDouble("vibrate", DEFAULT_VIBRATION));
+            if(vibrate > 0){
+                notification.setVibrate(new long[]{0, vibrate});
+            }else{
+                notification.setVibrate(null);
             }
 
             if(!mIsForeground || bundle.getBoolean("show_in_foreground")){
